@@ -1,0 +1,890 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>La Ragazza nel Bosco</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap');
+
+  :root {
+    --dark:    #0d1f12;
+    --green:   #1a3d25;
+    --mid:     #2d6a4f;
+    --light:   #74c69d;
+    --cream:   #f0e6c8;
+    --red:     #b84a2a;
+    --gold:    #d4a843;
+    --fog:     rgba(13,31,18,0.85);
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    background: var(--dark);
+    color: var(--cream);
+    font-family: 'Crimson Text', serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── FOREST BACKGROUND ── */
+  .forest-bg {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+  }
+
+  .tree {
+    position: absolute;
+    bottom: 0;
+    width: 0;
+    height: 0;
+    border-left: solid transparent;
+    border-right: solid transparent;
+    border-bottom: solid;
+    opacity: 0.18;
+  }
+
+  .moon {
+    position: fixed;
+    top: 6vh;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 70px;
+    height: 70px;
+    background: radial-gradient(circle at 40% 40%, #fff8e1, #d4a843);
+    border-radius: 50%;
+    box-shadow: 0 0 40px 15px rgba(212,168,67,0.18), 0 0 80px 30px rgba(212,168,67,0.08);
+    z-index: 1;
+    animation: moonPulse 4s ease-in-out infinite;
+  }
+
+  @keyframes moonPulse {
+    0%,100% { box-shadow: 0 0 40px 15px rgba(212,168,67,0.18), 0 0 80px 30px rgba(212,168,67,0.08); }
+    50%      { box-shadow: 0 0 60px 25px rgba(212,168,67,0.28), 0 0 120px 50px rgba(212,168,67,0.12); }
+  }
+
+  /* fireflies */
+  .firefly {
+    position: fixed;
+    width: 3px;
+    height: 3px;
+    border-radius: 50%;
+    background: #d4a843;
+    z-index: 1;
+    animation: fly linear infinite;
+  }
+
+  @keyframes fly {
+    0%   { opacity:0; transform: translate(0,0); }
+    20%  { opacity:1; }
+    80%  { opacity:1; }
+    100% { opacity:0; transform: translate(var(--dx), var(--dy)); }
+  }
+
+  /* ── MAIN LAYOUT ── */
+  #app {
+    position: relative;
+    z-index: 10;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0 1rem 4rem;
+  }
+
+  /* ── SCREEN BASE ── */
+  .screen {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    max-width: 700px;
+    animation: fadeIn 0.8s ease;
+  }
+  .screen.active { display: flex; }
+
+  @keyframes fadeIn {
+    from { opacity:0; transform: translateY(18px); }
+    to   { opacity:1; transform: translateY(0); }
+  }
+
+  /* ── TITLE SCREEN ── */
+  #screen-title {
+    justify-content: center;
+    min-height: 100vh;
+    text-align: center;
+    padding-top: 15vh;
+  }
+
+  .title-eyebrow {
+    font-family: 'Cinzel', serif;
+    font-size: 0.75rem;
+    letter-spacing: 0.35em;
+    color: var(--gold);
+    text-transform: uppercase;
+    margin-bottom: 1.5rem;
+  }
+
+  h1 {
+    font-family: 'Cinzel', serif;
+    font-size: clamp(2.2rem, 6vw, 3.8rem);
+    font-weight: 700;
+    color: var(--cream);
+    line-height: 1.15;
+    margin-bottom: 0.5rem;
+    text-shadow: 0 2px 30px rgba(212,168,67,0.3);
+  }
+
+  h1 span { color: var(--gold); }
+
+  .title-sub {
+    font-size: 1.15rem;
+    font-style: italic;
+    color: var(--light);
+    margin-bottom: 3rem;
+    line-height: 1.6;
+  }
+
+  /* ── PROGRESS BAR ── */
+  .progress-wrap {
+    width: 100%;
+    max-width: 700px;
+    padding: 1.2rem 1.5rem 0;
+    margin-top: 2rem;
+  }
+
+  .progress-label {
+    font-family: 'Cinzel', serif;
+    font-size: 0.65rem;
+    letter-spacing: 0.2em;
+    color: var(--gold);
+    margin-bottom: 0.4rem;
+  }
+
+  .progress-bar {
+    height: 3px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--mid), var(--gold));
+    border-radius: 2px;
+    transition: width 0.6s ease;
+  }
+
+  /* ── SCENE CARD ── */
+  .scene-card {
+    width: 100%;
+    max-width: 700px;
+    margin-top: 1.5rem;
+    background: linear-gradient(160deg, rgba(26,61,37,0.6) 0%, rgba(13,31,18,0.8) 100%);
+    border: 1px solid rgba(116,198,157,0.2);
+    border-radius: 2px;
+    overflow: hidden;
+    backdrop-filter: blur(4px);
+  }
+
+  .scene-header {
+    background: linear-gradient(90deg, var(--green), rgba(26,61,37,0.4));
+    padding: 1rem 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    border-bottom: 1px solid rgba(116,198,157,0.15);
+  }
+
+  .scene-num {
+    font-family: 'Cinzel', serif;
+    font-size: 0.65rem;
+    letter-spacing: 0.2em;
+    color: var(--gold);
+    white-space: nowrap;
+  }
+
+  .scene-title {
+    font-family: 'Cinzel', serif;
+    font-size: 1.05rem;
+    color: var(--cream);
+    font-weight: 700;
+  }
+
+  .scene-body {
+    padding: 1.6rem 1.5rem;
+  }
+
+  .scene-text {
+    font-size: 1.1rem;
+    line-height: 1.85;
+    color: var(--cream);
+    margin-bottom: 1.2rem;
+  }
+
+  .monster-quote {
+    border-left: 3px solid var(--red);
+    padding: 0.7rem 1rem;
+    margin: 1.2rem 0;
+    font-style: italic;
+    color: #e8c4a0;
+    font-size: 1.05rem;
+    background: rgba(184,74,42,0.08);
+  }
+
+  .scene-question {
+    font-family: 'Cinzel', serif;
+    font-size: 0.85rem;
+    color: var(--gold);
+    letter-spacing: 0.05em;
+    margin-top: 1.4rem;
+    padding-top: 1.2rem;
+    border-top: 1px solid rgba(116,198,157,0.15);
+  }
+
+  /* ── CHOICES ── */
+  .choices {
+    width: 100%;
+    max-width: 700px;
+    margin-top: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+
+  .choice-btn {
+    background: rgba(26,61,37,0.5);
+    border: 1px solid rgba(116,198,157,0.25);
+    border-radius: 2px;
+    padding: 1rem 1.4rem;
+    color: var(--cream);
+    font-family: 'Crimson Text', serif;
+    font-size: 1.05rem;
+    text-align: left;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    line-height: 1.5;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .choice-btn::before {
+    content: '›';
+    position: absolute;
+    left: -1.5rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--gold);
+    font-size: 1.4rem;
+    transition: left 0.25s ease;
+  }
+
+  .choice-btn:hover {
+    background: rgba(45,106,79,0.6);
+    border-color: var(--light);
+    padding-left: 2rem;
+    color: #fff;
+  }
+
+  .choice-btn:hover::before { left: 0.6rem; }
+
+  .choice-btn.correct {
+    background: rgba(45,106,79,0.7);
+    border-color: var(--light);
+    color: #fff;
+  }
+
+  .choice-btn.wrong {
+    background: rgba(184,74,42,0.3);
+    border-color: var(--red);
+    color: #e8c4a0;
+    opacity: 0.6;
+  }
+
+  /* ── FEEDBACK ── */
+  .feedback {
+    width: 100%;
+    max-width: 700px;
+    margin-top: 0.8rem;
+    padding: 1.1rem 1.4rem;
+    border-radius: 2px;
+    font-size: 1.05rem;
+    line-height: 1.6;
+    animation: fadeIn 0.4s ease;
+    display: none;
+  }
+
+  .feedback.good {
+    background: rgba(45,106,79,0.35);
+    border: 1px solid rgba(116,198,157,0.4);
+    color: #b7e4c7;
+    display: block;
+  }
+
+  .feedback.bad {
+    background: rgba(184,74,42,0.2);
+    border: 1px solid rgba(184,74,42,0.4);
+    color: #f4a261;
+    display: block;
+  }
+
+  /* ── NEXT BUTTON ── */
+  .next-btn {
+    margin-top: 1.2rem;
+    padding: 0.85rem 2.4rem;
+    background: transparent;
+    border: 1px solid var(--gold);
+    color: var(--gold);
+    font-family: 'Cinzel', serif;
+    font-size: 0.8rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.25s;
+    display: none;
+    border-radius: 1px;
+  }
+
+  .next-btn:hover {
+    background: var(--gold);
+    color: var(--dark);
+  }
+
+  /* ── START BUTTON ── */
+  .start-btn {
+    padding: 1rem 3rem;
+    background: transparent;
+    border: 1px solid var(--gold);
+    color: var(--gold);
+    font-family: 'Cinzel', serif;
+    font-size: 0.85rem;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.3s;
+    border-radius: 1px;
+  }
+
+  .start-btn:hover {
+    background: var(--gold);
+    color: var(--dark);
+    box-shadow: 0 0 30px rgba(212,168,67,0.3);
+  }
+
+  /* ── ENDING SCREEN ── */
+  #screen-end {
+    text-align: center;
+    padding-top: 8vh;
+    min-height: 100vh;
+  }
+
+  .end-score {
+    font-family: 'Cinzel', serif;
+    font-size: 3.5rem;
+    color: var(--gold);
+    margin: 1rem 0 0.5rem;
+  }
+
+  .end-score-label {
+    font-size: 0.9rem;
+    letter-spacing: 0.2em;
+    color: var(--light);
+    font-family: 'Cinzel', serif;
+    text-transform: uppercase;
+  }
+
+  .end-text {
+    max-width: 540px;
+    margin: 2rem auto;
+    font-size: 1.15rem;
+    line-height: 2;
+    font-style: italic;
+    color: var(--cream);
+  }
+
+  .end-moral {
+    font-family: 'Cinzel', serif;
+    font-size: 1rem;
+    color: var(--gold);
+    margin-top: 1.5rem;
+    letter-spacing: 0.05em;
+  }
+
+  .restart-btn {
+    margin-top: 2.5rem;
+    padding: 0.85rem 2.4rem;
+    background: transparent;
+    border: 1px solid var(--light);
+    color: var(--light);
+    font-family: 'Cinzel', serif;
+    font-size: 0.8rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.25s;
+    border-radius: 1px;
+  }
+
+  .restart-btn:hover { background: var(--light); color: var(--dark); }
+
+  /* ── MONSTER ICON ── */
+  .monster-icon {
+    font-size: 2.8rem;
+    display: block;
+    margin-bottom: 0.3rem;
+    filter: drop-shadow(0 0 12px rgba(184,74,42,0.5));
+    animation: iconFloat 3s ease-in-out infinite;
+  }
+
+  @keyframes iconFloat {
+    0%,100% { transform: translateY(0); }
+    50%      { transform: translateY(-6px); }
+  }
+
+  /* ── GROUND ── */
+  .ground {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 60px;
+    background: linear-gradient(to top, rgba(26,61,37,0.6), transparent);
+    z-index: 1;
+    pointer-events: none;
+  }
+
+  /* ── PRINT BUTTON ── */
+  .print-btn {
+    margin-top: 1rem;
+    padding: 0.85rem 2.4rem;
+    background: transparent;
+    border: 1px solid var(--mid);
+    color: var(--light);
+    font-family: 'Cinzel', serif;
+    font-size: 0.8rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.25s;
+    border-radius: 1px;
+  }
+  .print-btn:hover { background: var(--mid); color: var(--cream); }
+
+  /* ── PRINT STYLES ── */
+  @media print {
+    body { background: #fff !important; color: #111 !important; }
+    .forest-bg, .moon, .firefly, .ground { display: none !important; }
+    #app { display: none !important; }
+    #print-page { display: block !important; }
+  }
+
+  /* ── PRINT PAGE ── */
+  #print-page {
+    display: none;
+    font-family: Georgia, serif;
+    color: #111;
+    max-width: 700px;
+    margin: 0 auto;
+    padding: 2rem;
+  }
+  .print-title { font-family: 'Cinzel', serif; font-size: 2rem; text-align: center; color: #1a3d25; margin-bottom: 0.3rem; }
+  .print-subtitle { text-align: center; font-style: italic; color: #555; font-size: 0.95rem; margin-bottom: 0.5rem; }
+  .print-score { text-align: center; font-family: 'Cinzel', serif; font-size: 0.8rem; letter-spacing: 0.15em; color: #2d6a4f; margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 2px solid #1a3d25; }
+  .print-scene { margin-bottom: 2rem; page-break-inside: avoid; }
+  .print-scene-header { display: flex; align-items: baseline; gap: 0.7rem; margin-bottom: 0.5rem; }
+  .print-scene-num { font-family: 'Cinzel', serif; font-size: 0.65rem; letter-spacing: 0.15em; color: #888; }
+  .print-scene-title { font-family: 'Cinzel', serif; font-size: 1.1rem; color: #1a3d25; font-weight: 700; }
+  .print-scene-text { font-size: 1rem; line-height: 1.75; color: #222; margin-bottom: 0.4rem; }
+  .print-quote { border-left: 3px solid #b84a2a; padding: 0.4rem 0.8rem; font-style: italic; color: #b84a2a; font-size: 0.95rem; margin: 0.5rem 0; }
+  .print-choices { margin-top: 0.8rem; }
+  .print-choice { padding: 0.45rem 0.8rem; margin-bottom: 0.3rem; font-size: 0.95rem; border-radius: 2px; border-left: 4px solid transparent; }
+  .print-choice.chosen-correct { background: #e8f5ee; border-left-color: #2d6a4f; color: #1a3d25; font-weight: bold; }
+  .print-choice.chosen-wrong { background: #fdecea; border-left-color: #b84a2a; color: #b84a2a; text-decoration: line-through; }
+  .print-choice.correct-answer { background: #e8f5ee; border-left-color: #2d6a4f; color: #1a3d25; }
+  .print-choice.neutral { color: #aaa; }
+  .print-feedback { font-size: 0.85rem; font-style: italic; color: #555; margin-top: 0.25rem; padding-left: 0.8rem; }
+  .print-divider { border: none; border-top: 1px solid #ddd; margin: 1.5rem 0; }
+  .print-ending { background: #f4f8f5; border: 1px solid #2d6a4f; padding: 1.5rem; text-align: center; margin-top: 2rem; }
+  .print-ending-title { font-family: 'Cinzel', serif; font-size: 1.2rem; color: #1a3d25; margin-bottom: 1rem; }
+  .print-ending-text { font-size: 1rem; line-height: 1.9; font-style: italic; color: #333; }
+  .print-moral { font-family: 'Cinzel', serif; font-size: 0.85rem; color: #2d6a4f; margin-top: 1rem; letter-spacing: 0.05em; }
+</style>
+</head>
+<body>
+
+<div class="forest-bg" id="forestBg"></div>
+<div class="moon"></div>
+<div class="ground"></div>
+
+<div id="app">
+
+  <!-- ── TITLE ── -->
+  <div class="screen active" id="screen-title">
+    <p class="title-eyebrow">Un racconto da brividi</p>
+    <h1>La Ragazza<br><span>nel Bosco</span></h1>
+    <p class="title-sub">Nel bosco vivono dei mostri.<br>Ogni mostro è una paura della vita.<br>Aiuta la ragazza ad affrontarli.</p>
+    <button class="start-btn" onclick="startGame()">Entra nel bosco</button>
+  </div>
+
+  <!-- ── GAME ── -->
+  <div class="screen" id="screen-game">
+    <div class="progress-wrap">
+      <div class="progress-label">CAMMINO NEL BOSCO</div>
+      <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+    </div>
+
+    <div class="scene-card" id="sceneCard">
+      <div class="scene-header">
+        <span class="scene-num" id="sceneNum">SCENA 1 / 8</span>
+        <span class="scene-title" id="sceneTitle"></span>
+      </div>
+      <div class="scene-body">
+        <span class="monster-icon" id="monsterIcon"></span>
+        <p class="scene-text" id="sceneText"></p>
+        <div class="monster-quote" id="monsterQuote"></div>
+        <p class="scene-question" id="sceneQuestion"></p>
+      </div>
+    </div>
+
+    <div class="choices" id="choicesContainer"></div>
+    <div class="feedback" id="feedback"></div>
+    <button class="next-btn" id="nextBtn" onclick="nextScene()">Continua il cammino →</button>
+  </div>
+
+  <!-- ── END ── -->
+  <div class="screen" id="screen-end">
+    <p class="title-eyebrow">Fine del viaggio</p>
+    <h1>Uscita <span>dal bosco</span></h1>
+    <div class="end-score" id="endScore"></div>
+    <div class="end-score-label">paure affrontate con successo</div>
+    <div class="end-text">
+      Quando la ragazza uscì dal bosco, si voltò indietro sorridendo.<br>
+      Il bosco non sembrava più così spaventoso.<br><br>
+      Aveva capito una cosa importante:<br>
+      <em>le paure non spariscono. Ma si affrontano.</em><br>
+      E ogni volta che le affronta, diventa un po' più sicura e consapevole.
+    </div>
+    <p class="end-moral" id="endMoral"></p>
+    <button class="restart-btn" onclick="restartGame()">Ricomincia il viaggio</button>
+    <button class="print-btn" onclick="printStory()">🖨 Stampa la storia</button>
+  </div>
+
+</div>
+
+<!-- ── PRINT PAGE (hidden, shown only on print) ── -->
+<div id="print-page"></div>
+
+<script>
+// ── SCENE DATA ──────────────────────────────────────────────────────────
+const scenes = [
+  {
+    title: "Il Mostro della Solitudine",
+    icon: "🌑",
+    text: "Di notte la ragazza si ritrova sola in una parte del bosco che non conosce. Il Mostro della Solitudine è grande e freddo.",
+    quote: "«Non c'è nessuno qui per te. Nessuno verrà ad aiutarti.»",
+    question: "Che cosa fa la ragazza?",
+    choices: [
+      { text: "Si siede per terra e aspetta che qualcuno venga a salvarla.", correct: false, feedback: "Aspettare passivamente non aiuta. La ragazza deve trovare lei stessa una strategia." },
+      { text: "Respira, guarda intorno a sé e cerca un punto di riferimento per orientarsi.", correct: true, feedback: "✓ Brava! Fermarsi, respirare e osservare sono le prime cose da fare quando ci si sente soli e spaesati. La ragazza usa la testa invece di farsi travolgere dalla paura." },
+      { text: "Scappa di corsa senza guardare dove va.", correct: false, feedback: "Correre senza meta quando siamo spaventati spesso peggiora la situazione." },
+    ]
+  },
+  {
+    title: "Il Mostro del Giudizio",
+    icon: "👁️",
+    text: "La ragazza arriva in una radura con altra gente. Il Mostro del Giudizio ha mille occhi che la fissano tutti insieme.",
+    quote: "«Tutti ti stanno guardando. Ti stanno criticando in silenzio.»",
+    question: "Che cosa fa la ragazza?",
+    choices: [
+      { text: "Si nasconde dietro un albero finché la gente non va via.", correct: false, feedback: "Nascondersi evita il problema per un momento, ma non aiuta a superarlo." },
+      { text: "Pensa: 'Non sto facendo nulla di male' e cammina a testa alta.", correct: true, feedback: "✓ Esatto! Spesso crediamo che tutti ci guardino, ma nella realtà ognuno è preso dai propri pensieri. Andare avanti con calma è la scelta giusta." },
+      { text: "Urla al mostro di andarsene.", correct: false, feedback: "Il mostro del giudizio non si combatte urlando — si combatte con la consapevolezza." },
+    ]
+  },
+  {
+    title: "Il Mostro della Paura di Parlare",
+    icon: "🤐",
+    text: "Più avanti la ragazza trova il Mostro della Paura di Parlare. Ogni volta che vuole dire qualcosa, il mostro le fa tremare la voce.",
+    quote: "«Non aprire la bocca. Farai brutta figura.»",
+    question: "Che cosa fa la ragazza?",
+    choices: [
+      { text: "Fa finta di niente e non dice nulla.", correct: false, feedback: "Tacere sempre per paura ci isola dagli altri e ci fa sentire ancora più piccoli." },
+      { text: "Parla lo stesso, anche se la voce trema un po'.", correct: true, feedback: "✓ Perfetto! Il coraggio non è non avere paura — è fare la cosa giusta anche quando si ha paura. Una voce che trema un po' è comunque una voce." },
+      { text: "Aspetta che qualcun altro parli al posto suo.", correct: false, feedback: "Delegare sempre ad altri ci impedisce di crescere e di farci sentire capaci." },
+    ]
+  },
+  {
+    title: "Il Mostro della Paura di Sbagliare",
+    icon: "⚡",
+    text: "La ragazza deve attraversare un ponte di pietra. Il Mostro della Paura di Sbagliare le blocca i piedi.",
+    quote: "«Se metti un piede sbagliato, cadi. Meglio non provare mai.»",
+    question: "Che cosa fa la ragazza?",
+    choices: [
+      { text: "Torna indietro — meglio non rischiare.", correct: false, feedback: "Evitare sempre per paura di sbagliare ci impedisce di arrivare dove vogliamo andare." },
+      { text: "Attraversa il ponte un passo alla volta, con attenzione.", correct: true, feedback: "✓ Giusto! Sbagliare fa parte del processo di imparare. Andare piano, un passo alla volta, è una strategia saggia e coraggiosa." },
+      { text: "Chiude gli occhi e corre senza pensarci.", correct: false, feedback: "Agire senza pensare quando si è spaventati non è coraggio — è imprudenza." },
+    ]
+  },
+  {
+    title: "Il Mostro del Cambiamento",
+    icon: "🌫️",
+    text: "Dal bosco uscì il Mostro del Cambiamento. Il sentiero che la ragazza conosceva non c'è più — tutto è diverso.",
+    quote: "«Non sai cosa c'è dopo. Le cose nuove sono sempre pericolose.»",
+    question: "Che cosa fa la ragazza?",
+    choices: [
+      { text: "Si rifiuta di andare avanti e aspetta che tutto torni come prima.", correct: false, feedback: "Le cose cambiano e non tornano sempre indietro. Resistere al cambiamento ci lascia fermi mentre la vita va avanti." },
+      { text: "Si fa aiutare da qualcuno che conosce il nuovo percorso.", correct: true, feedback: "✓ Bravo! Chiedere aiuto quando ci troviamo in una situazione nuova è intelligente, non debolezza. Imparare dai cambiamenti ci rende più forti." },
+      { text: "Piange e si dispera finché non si calma da sola.", correct: false, feedback: "È normale sentire emozioni forti di fronte ai cambiamenti, ma fermarsi a piangere senza cercare soluzioni non ci fa andare avanti." },
+    ]
+  },
+  {
+    title: "Il Mostro del Chiedere Aiuto",
+    icon: "🚪",
+    text: "La ragazza è stanca e si è persa. C'è una casa davanti a lei con della luce alle finestre. Il mostro le blocca la mano.",
+    quote: "«Non bussare. E se poi nessuno ti risponde? Ti sembrerà stupida.»",
+    question: "Che cosa fa la ragazza?",
+    choices: [
+      { text: "Non bussa e continua a vagare nel bosco da sola.", correct: false, feedback: "Rinunciare a chiedere aiuto per paura del rifiuto ci lascia soli con i nostri problemi." },
+      { text: "Bussa alla porta e chiede gentilmente indicazioni.", correct: true, feedback: "✓ Esatto! Chiedere aiuto è un atto di coraggio e di intelligenza. Non siamo deboli perché abbiamo bisogno degli altri — siamo umani." },
+      { text: "Spia dalla finestra senza farsi vedere.", correct: false, feedback: "Osservare da lontano senza interagire non risolve il problema di essere persi." },
+    ]
+  },
+  {
+    title: "Il Mostro del Fallimento",
+    icon: "💢",
+    text: "La ragazza cerca di arrampicarsi su un tronco che blocca la strada. Ma scivola e cade. Il Mostro del Fallimento appare.",
+    quote: "«Hai fallito. È inutile riprovare. Non ce la farai mai.»",
+    question: "Che cosa fa la ragazza?",
+    choices: [
+      { text: "Si rialza, si controlla se si è fatta male, e ci riprova con più attenzione.", correct: true, feedback: "✓ Perfetto! Cadere non è fallire — fallire è non rialzarsi. Ogni errore ci insegna qualcosa su come fare meglio la volta dopo." },
+      { text: "Rimane per terra — tanto non servirà a niente riprovare.", correct: false, feedback: "Rinunciare dopo il primo ostacolo ci impedisce di scoprire quanto siamo capaci." },
+      { text: "Urla alla sua frustrazione finché passa.", correct: false, feedback: "Esprimere la frustrazione va bene, ma poi bisogna trovare una strategia concreta." },
+    ]
+  },
+  {
+    title: "Il Mostro delle Emozioni",
+    icon: "🌀",
+    text: "La ragazza sente una tristezza enorme senza sapere perché. Il Mostro delle Emozioni cambia forma continuamente: ride, piange, urla.",
+    quote: "«Nessuno può capirti. Nemmeno tu capisci te stesso.»",
+    question: "Che cosa fa la ragazza?",
+    choices: [
+      { text: "Ignora quello che sente e fa finta che vada tutto bene.", correct: false, feedback: "Ignorare le emozioni non le fa sparire — le accumula. Prima o poi tornano più forti." },
+      { text: "Trova qualcuno di cui si fida e gli dice come si sente.", correct: true, feedback: "✓ Brava! Parlare di quello che sentiamo con qualcuno di cui ci fidiamo è uno dei modi più potenti per stare meglio. Le emozioni hanno bisogno di essere dette." },
+      { text: "Si isola completamente per non disturbare nessuno.", correct: false, feedback: "Isolarsi quando stiamo male spesso peggiora la situazione. Gli altri non sono un peso — sono una risorsa." },
+    ]
+  },
+];
+
+// ── GAME STATE ──────────────────────────────────────────────────────────
+let current = 0;
+let score = 0;
+let answered = false;
+let choiceLog = []; // tracks {sceneIdx, chosenIdx} for each scene
+
+// ── FOREST BACKGROUND ───────────────────────────────────────────────────
+function buildForest() {
+  const bg = document.getElementById('forestBg');
+  const trees = [
+    {l:-2, w:120, h:280, c:'#1a3d25'},{l:3, w:80, h:200, c:'#0d1f12'},
+    {l:8, w:100, h:240, c:'#2d6a4f'},{l:15, w:70, h:180, c:'#1a3d25'},
+    {l:22, w:110, h:260, c:'#0d1f12'},{l:30, w:90, h:220, c:'#1a3d25'},
+    {l:38, w:75, h:190, c:'#2d6a4f'},{l:45, w:130, h:300, c:'#0d1f12'},
+    {l:53, w:85, h:210, c:'#1a3d25'},{l:60, w:95, h:230, c:'#2d6a4f'},
+    {l:68, w:115, h:270, c:'#0d1f12'},{l:75, w:70, h:175, c:'#1a3d25'},
+    {l:82, w:105, h:250, c:'#2d6a4f'},{l:89, w:80, h:195, c:'#0d1f12'},
+    {l:95, w:120, h:285, c:'#1a3d25'},
+  ];
+  trees.forEach(t => {
+    const el = document.createElement('div');
+    el.className = 'tree';
+    el.style.cssText = `left:${t.l}%;border-left-width:${t.w/2}px;border-right-width:${t.w/2}px;border-bottom-width:${t.h}px;border-bottom-color:${t.c};`;
+    bg.appendChild(el);
+  });
+  // fireflies
+  for(let i=0;i<18;i++){
+    const f=document.createElement('div');
+    f.className='firefly';
+    const dx=(Math.random()-0.5)*200, dy=(Math.random()-0.5)*200;
+    f.style.cssText=`left:${Math.random()*100}%;top:${Math.random()*80}%;--dx:${dx}px;--dy:${dy}px;animation-duration:${4+Math.random()*6}s;animation-delay:${Math.random()*6}s;`;
+    document.body.appendChild(f);
+  }
+}
+
+// ── GAME FUNCTIONS ───────────────────────────────────────────────────────
+function startGame() {
+  showScreen('screen-game');
+  loadScene(0);
+}
+
+function loadScene(idx) {
+  answered = false;
+  const s = scenes[idx];
+  document.getElementById('sceneNum').textContent = `SCENA ${idx+1} / ${scenes.length}`;
+  document.getElementById('sceneTitle').textContent = s.title;
+  document.getElementById('monsterIcon').textContent = s.icon;
+  document.getElementById('sceneText').textContent = s.text;
+  document.getElementById('monsterQuote').textContent = s.quote;
+  document.getElementById('sceneQuestion').textContent = s.question;
+
+  // progress
+  document.getElementById('progressFill').style.width = `${(idx/scenes.length)*100}%`;
+
+  // choices
+  const container = document.getElementById('choicesContainer');
+  container.innerHTML = '';
+  s.choices.forEach((ch, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'choice-btn';
+    btn.textContent = ch.text;
+    btn.onclick = () => handleChoice(i);
+    container.appendChild(btn);
+  });
+
+  // hide feedback and next
+  const fb = document.getElementById('feedback');
+  fb.className = 'feedback';
+  fb.textContent = '';
+  document.getElementById('nextBtn').style.display = 'none';
+
+  // scroll to top
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+function handleChoice(idx) {
+  if(answered) return;
+  answered = true;
+  const s = scenes[current];
+  const ch = s.choices[idx];
+  const buttons = document.querySelectorAll('.choice-btn');
+  const fb = document.getElementById('feedback');
+
+  buttons.forEach((btn, i) => {
+    btn.disabled = true;
+    if(s.choices[i].correct) btn.classList.add('correct');
+    else if(i === idx && !ch.correct) btn.classList.add('wrong');
+  });
+
+  fb.className = 'feedback ' + (ch.correct ? 'good' : 'bad');
+  fb.textContent = ch.feedback;
+
+  if(ch.correct) score++;
+  choiceLog[current] = idx;
+
+  document.getElementById('nextBtn').style.display = 'inline-block';
+}
+
+function nextScene() {
+  current++;
+  if(current >= scenes.length) {
+    endGame();
+  } else {
+    // re-render scene card with animation
+    const card = document.getElementById('sceneCard');
+    card.style.opacity = '0';
+    card.style.transform = 'translateY(15px)';
+    setTimeout(() => {
+      loadScene(current);
+      card.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+      card.style.opacity = '1';
+      card.style.transform = 'translateY(0)';
+    }, 300);
+  }
+}
+
+function endGame() {
+  document.getElementById('progressFill').style.width = '100%';
+  document.getElementById('endScore').textContent = `${score} / ${scenes.length}`;
+
+  let moral;
+  if(score === scenes.length) moral = "Hai affrontato tutte le paure. Sei pronta per uscire dal bosco.";
+  else if(score >= 6) moral = "Hai dimostrato tanto coraggio. Ogni paura affrontata ti ha resa più forte.";
+  else if(score >= 4) moral = "Il cammino non è stato facile, ma hai imparato qualcosa da ogni mostro.";
+  else moral = "Il bosco è impegnativo. L'importante è non smettere di camminare.";
+
+  document.getElementById('endMoral').textContent = moral;
+  showScreen('screen-end');
+}
+
+function restartGame() {
+  current = 0;
+  score = 0;
+  answered = false;
+  choiceLog = [];
+  showScreen('screen-title');
+}
+
+function printStory() {
+  const page = document.getElementById('print-page');
+
+  let moral;
+  if(score === scenes.length) moral = "Hai affrontato tutte le paure. Sei pronta per uscire dal bosco.";
+  else if(score >= 6) moral = "Hai dimostrato tanto coraggio. Ogni paura affrontata ti ha resa più forte.";
+  else if(score >= 4) moral = "Il cammino non è stato facile, ma hai imparato qualcosa da ogni mostro.";
+  else moral = "Il bosco è impegnativo. L'importante è non smettere di camminare.";
+
+  let html = `
+    <h1 class="print-title">La Ragazza nel Bosco</h1>
+    <p class="print-subtitle">Un racconto da brividi</p>
+    <p class="print-score">Paure affrontate con successo: ${score} / ${scenes.length}</p>
+  `;
+
+  scenes.forEach((s, si) => {
+    const chosen = choiceLog[si] !== undefined ? choiceLog[si] : null;
+    html += `<div class="print-scene">`;
+    html += `<div class="print-scene-header">
+      <span class="print-scene-num">SCENA ${si+1}</span>
+      <span class="print-scene-icon">${s.icon}</span>
+      <span class="print-scene-title">${s.title}</span>
+    </div>`;
+    html += `<p class="print-scene-text">${s.text}</p>`;
+    html += `<div class="print-quote">${s.quote}</div>`;
+    html += `<p style="font-size:0.85rem;color:#555;font-style:italic;margin:0.3rem 0;">${s.question}</p>`;
+    html += `<div class="print-choices">`;
+
+    s.choices.forEach((ch, ci) => {
+      let cls = 'neutral';
+      let tag = '';
+      if(chosen === ci && ch.correct) { cls = 'chosen-correct'; tag = ' ✓'; }
+      else if(chosen === ci && !ch.correct) { cls = 'chosen-wrong'; tag = ' ✗'; }
+      else if(ch.correct && chosen !== null) { cls = 'correct-answer'; tag = ' ← risposta giusta'; }
+
+      html += `<div class="print-choice ${cls}">${ch.text}<span style="font-size:0.75rem;letter-spacing:0.05em;">${tag}</span></div>`;
+      if(chosen === ci) {
+        html += `<div class="print-feedback">${ch.feedback}</div>`;
+      }
+    });
+
+    html += `</div></div>`;
+    if(si < scenes.length - 1) html += `<hr class="print-divider">`;
+  });
+
+  html += `<div class="print-ending">
+    <div class="print-ending-title">Fine del Viaggio</div>
+    <div class="print-ending-text">
+      Quando la ragazza uscì dal bosco, si voltò indietro sorridendo.<br>
+      Il bosco non sembrava più così spaventoso.<br><br>
+      Aveva capito una cosa importante:<br>
+      <em>le paure non spariscono. Ma si affrontano.</em><br>
+      E ogni volta che le affronta, diventa un po' più sicura e consapevole.
+    </div>
+    <p class="print-moral">${moral}</p>
+  </div>`;
+
+  page.innerHTML = html;
+  window.print();
+}
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo({top:0});
+}
+
+// ── INIT ─────────────────────────────────────────────────────────────────
+buildForest();
+</script>
+</body>
+</html>
